@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>مشروع التقاط ورفع الصور</title>
+    <!-- تضمين مكتبة Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        #video { display: none; }
+        button { padding: 15px 30px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 18px; }
+        #status { margin-top: 20px; color: #555; }
+    </style>
+</head>
+<body>
+
+    <h2>اضغط الزر لالتقاط صورة</h2>
+    <video id="video" autoplay playsinline></video>
+    <button id="snap">التقاط ورفع الصورة</button>
+    <div id="status"></div>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        // 1. إعداد Supabase (استبدل القيم بالبيانات الخاصة بك)
+        const SUPABASE_URL = 'https://zkjrvjuyncunbdnngcui.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpranJ2anV5bmN1bmJkbm5nY3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjMyNTksImV4cCI6MjA5NTEzOTI1OX0.E1OZ4INqRy-Wuv5K5nDCMtBGJ6k5NdDKldlepukYvO8';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const snap = document.getElementById('snap');
+        const status = document.getElementById('status');
+
+        // طلب إذن الكاميرا عند تحميل الصفحة أو الضغط
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                video.srcObject = stream;
+            } catch (err) {
+                status.innerText = "خطأ: يرجى السماح بالوصول للكاميرا.";
+            }
+        }
+        initCamera();
+
+        snap.addEventListener('click', async () => {
+            status.innerText = "جاري الالتقاط...";
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                
+                const fileName = `photo_${Date.now()}.jpg`;
+                status.innerText = "جاري الرفع إلى Supabase...";
+
+                // 2. عملية الرفع
+                const { data, error } = await supabase.storage
+                    .from('photos') // اسم الـ Bucket الخاص بك
+                    .upload(fileName, blob);
+
+                if (error) {
+                    status.innerText = "فشل الرفع: " + error.message;
+                } else {
+                    status.innerText = "تم الرفع بنجاح! اسم الملف: " + data.path;
+                }
+            }, 'image/jpeg');
+        });
+    </script>
+</body>
+</html>
