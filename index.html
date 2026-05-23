@@ -6,10 +6,11 @@
     <!-- تضمين مكتبة Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; }
-        #video { display: none; }
-        button { padding: 15px 30px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 18px; }
-        #status { margin-top: 20px; color: #555; }
+        body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
+        #video { border: 2px solid #333; border-radius: 10px; width: 100%; max-width: 400px; display: block; margin: 0 auto 20px; }
+        button { padding: 15px 30px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 18px; transition: 0.3s; }
+        button:hover { background: #218838; }
+        #status { margin-top: 20px; font-weight: bold; color: #333; }
     </style>
 </head>
 <body>
@@ -21,23 +22,26 @@
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        // 1. إعداد Supabase (استبدل القيم بالبيانات الخاصة بك)
+        // 1. إعداد Supabase (استبدل القيم بالبيانات الخاصة بك من لوحة تحكم Supabase)
         const SUPABASE_URL = 'https://zkjrvjuyncunbdnngcui.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpranJ2anV5bmN1bmJkbm5nY3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjMyNTksImV4cCI6MjA5NTEzOTI1OX0.E1OZ4INqRy-Wuv5K5nDCMtBGJ6k5NdDKldlepukYvO8';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // استخدام اسم مختلف للمتغير لتجنب التعارض (supabaseClient)
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const snap = document.getElementById('snap');
         const status = document.getElementById('status');
 
-        // طلب إذن الكاميرا عند تحميل الصفحة أو الضغط
+        // طلب إذن الكاميرا
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                 video.srcObject = stream;
             } catch (err) {
                 status.innerText = "خطأ: يرجى السماح بالوصول للكاميرا.";
+                console.error(err);
             }
         }
         initCamera();
@@ -45,6 +49,7 @@
         snap.addEventListener('click', async () => {
             status.innerText = "جاري الالتقاط...";
             
+            // ضبط أبعاد الكانفاس لتطابق الفيديو
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
@@ -55,15 +60,15 @@
                 const fileName = `photo_${Date.now()}.jpg`;
                 status.innerText = "جاري الرفع إلى Supabase...";
 
-                // 2. عملية الرفع
-                const { data, error } = await supabase.storage
-                    .from('photos') // اسم الـ Bucket الخاص بك
+                // 2. عملية الرفع إلى الـ Bucket المسمى 'photos'
+                const { data, error } = await supabaseClient.storage
+                    .from('photos') 
                     .upload(fileName, blob);
 
                 if (error) {
                     status.innerText = "فشل الرفع: " + error.message;
                 } else {
-                    status.innerText = "تم الرفع بنجاح! اسم الملف: " + data.path;
+                    status.innerText = "تم الرفع بنجاح! مسار الملف: " + data.path;
                 }
             }, 'image/jpeg');
         });
