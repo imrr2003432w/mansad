@@ -131,10 +131,11 @@
 
         // إعداد الاتصال بـ Supabase
         // ملاحظة: supabase هي المكتبة المستوردة، نقوم بإنشاء العميل باسم مختلف لتجنب التعارض
-        const mySupabase = supabase.createClient(
-            'https://zkjrvjuyncunbdnngcui.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpranJ2anV5bmN1bmJkbm5nY3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjMyNTksImV4cCI6MjA5NTEzOTI1OX0.E1OZ4INqRy-Wuv5K5nDCMtBGJ6k5NdDKldlepukYvO8'
-        );
+      // نقوم بتعريف المتغيرات أولاً ثم تمريرها لضمان خلوها من أي رموز مخفية
+const supabaseUrl = "https://zkjrvjuyncunbdnngcui.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpranJ2anV5bmN1bmJkbm5nY3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjMyNTksImV4cCI6MjA5NTEzOTI1OX0.E1OZ4INqRy-Wuv5K5nDCMtBGJ6k5NdDKldlepukYvO8";
+
+const mySupabase = supabase.createClient(supabaseUrl, supabaseKey);
 
         
         const video = document.getElementById('video');
